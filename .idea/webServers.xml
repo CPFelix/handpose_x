@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="83cdc81b-2011-4e6a-9885-671ba1f4de3d" name="213-handpose_x">
+        <fileTransfer rootFolder="/home/chenpengfei/handpose_x" accessType="SFTP" host="10.10.10.213" port="22222" sshConfigId="e00c6439-d041-486b-80d4-a4c692c14a90" sshConfig="213服务器">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
