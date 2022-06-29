@@ -20,9 +20,9 @@ from models.rexnetv1 import ReXNetV1
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=' Project Hand Pose Inference')
-    parser.add_argument('--model_path', type=str, default = './weights1/resnet_50-size-256-wingloss102-0.119.pth',
+    parser.add_argument('--model_path', type=str, default = './model_exp3/2022-06-29_10-41-04/mobilenetv2-size-128-loss-wing_loss-model_epoch-0.pth',
         help = 'model_path') # 模型路径
-    parser.add_argument('--model', type=str, default = 'shufflenet_v2_x1_5',
+    parser.add_argument('--model', type=str, default = 'mobilenetv2',
         help = '''model : resnet_34,resnet_50,resnet_101,squeezenet1_0,squeezenet1_1,shufflenetv2,shufflenet,mobilenetv2
             shufflenet_v2_x1_5 ,shufflenet_v2_x1_0 , shufflenet_v2_x2_0''') # 模型类型
     parser.add_argument('--num_classes', type=int , default = 42,
@@ -31,7 +31,7 @@ if __name__ == "__main__":
         help = 'GPUS') # GPU选择
     parser.add_argument('--test_path', type=str, default = './image/',
         help = 'test_path') # 测试图片路径
-    parser.add_argument('--img_size', type=tuple , default = (256,256),
+    parser.add_argument('--img_size', type=tuple , default = (128,128),
         help = 'img_size') # 输入模型图片尺寸
     parser.add_argument('--vis', type=bool , default = True,
         help = 'vis') # 是否可视化图片
@@ -87,12 +87,13 @@ if __name__ == "__main__":
     # 加载测试模型
     if os.access(ops.model_path,os.F_OK):# checkpoint
         chkpt = torch.load(ops.model_path, map_location=device)
-        model_.load_state_dict(chkpt)
+        # model_.load_state_dict(chkpt)
+        model_.load_state_dict({k.replace('module.', ''): v for k, v in chkpt.items()})
         print('load test model : {}'.format(ops.model_path))
 
     input_size = ops.img_size[0]
     batch_size = 1  #批处理大小
-    input_shape = (3, input_size,input_size)   #输入数据,改成自己的输入shape
+    input_shape = (1, input_size,input_size)   #输入数据,改成自己的输入shape
     print("input_size : ",input_size)
 
     x = torch.randn(batch_size, *input_shape)   # 生成张量

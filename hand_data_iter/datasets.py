@@ -337,10 +337,43 @@ class LoadImagesAndLabels(Dataset):
             cv2.namedWindow('crop',0)
             cv2.imshow('crop',img_)
             cv2.waitKey(1)
+
+        #转换为单通道
+        img_ = cv2.cvtColor(img_, cv2.COLOR_BGR2GRAY)
+
         img_ = img_.astype(np.float32)
         img_ = (img_-128.)/256.
-        img_ = img_.transpose(2, 0, 1)
+        # img_ = img_.transpose(2, 0, 1)
+        img_ = img_[None, :, :]
 
 
         pts_tor_landmarks_norm = np.array(pts_tor_landmarks_norm).ravel()
         return img_,pts_tor_landmarks_norm
+
+
+class WLFWDatasets(Dataset):
+    def __init__(self, file_list, transforms=None, imgFolder=""):
+        self.line = None
+        self.path = None
+        self.landmarks = None
+        self.attribute = None
+        self.filenames = None
+        self.euler_angle = None
+        self.transforms = transforms
+        self.imgFolder = imgFolder
+        with open(file_list, 'r') as f:
+            self.lines = f.readlines()
+
+    def __getitem__(self, index):
+        self.line = self.lines[index].strip().split()
+        # self.img = cv2.imread(self.imgFolder + self.line[0])
+        self.img = Image.open(self.imgFolder + self.line[0])
+        self.landmark = np.asarray(self.line[1:43], dtype=np.float32)
+        # self.attribute = np.asarray(self.line[197:203], dtype=np.int32)
+        # self.euler_angle = np.asarray(self.line[203:206], dtype=np.float32)
+        if self.transforms:
+            self.img = self.transforms(self.img)
+        return (self.img, self.landmark)
+
+    def __len__(self):
+        return len(self.lines)

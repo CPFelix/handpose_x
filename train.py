@@ -22,6 +22,7 @@ from models.mobilenetv2 import MobileNetV2
 from models.rexnetv1 import ReXNetV1
 
 from torchvision.models import shufflenet_v2_x1_5 ,shufflenet_v2_x1_0 , shufflenet_v2_x2_0
+from torchvision import transforms
 
 from loss.loss import *
 import cv2
@@ -72,11 +73,15 @@ def trainer(ops,f_log):
         use_cuda = torch.cuda.is_available()
 
         device = torch.device("cuda:0" if use_cuda else "cpu")
-        model_ = model_.to(device)
+        # model_ = model_.to(device)
+        device_ids = list(range(torch.cuda.device_count()))
+        model_ = nn.DataParallel(model_, device_ids).cuda()
 
         # print(model_)# 打印模型结构
         # Dataset
         dataset = LoadImagesAndLabels(ops= ops,img_size=ops.img_size,flag_agu=ops.flag_agu,fix_res = ops.fix_res,vis = False)
+        # transform = transforms.Compose([transforms.Resize((128, 128)), transforms.ToTensor()])
+        # dataset = WLFWDatasets("/home/chenpengfei/dataset/hand_labels/manual_train/manual_train.txt", transform, "/home/chenpengfei/dataset/hand_labels/manual_train/images/")
         print("handpose done")
 
         print('len train datasets : %s'%(dataset.__len__()))
@@ -175,18 +180,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=' Project Hand Train')
     parser.add_argument('--seed', type=int, default = 126673,
         help = 'seed') # 设置随机种子
-    parser.add_argument('--model_exp', type=str, default = './model_exp',
+    parser.add_argument('--model_exp', type=str, default = './model_exp3',
         help = 'model_exp') # 模型输出文件夹
-    parser.add_argument('--model', type=str, default = 'ReXNetV1',
+    parser.add_argument('--model', type=str, default = 'mobilenetv2',
         help = '''model : resnet_34,resnet_50,resnet_101,squeezenet1_0,squeezenet1_1,shufflenetv2,shufflenet,mobilenetv2
             shufflenet_v2_x1_5 ,shufflenet_v2_x1_0 , shufflenet_v2_x2_0,ReXNetV1''') # 模型类型
     parser.add_argument('--num_classes', type=int , default = 42,
         help = 'num_classes') #  landmarks 个数*2
-    parser.add_argument('--GPUS', type=str, default = '0',
+    parser.add_argument('--GPUS', type=str, default = '2,3,4,5,6,7',
         help = 'GPUS') # GPU选择
 
     parser.add_argument('--train_path', type=str,
-        default = "./handpose_datasets_v1/",
+        default = "/home/chenpengfei/dataset/handpose_datasets_v1/",
         help = 'datasets')# 训练集标注信息
 
     parser.add_argument('--pretrained', type=bool, default = True,
@@ -203,15 +208,15 @@ if __name__ == "__main__":
         help = 'weight_decay') # 优化器正则损失权重
     parser.add_argument('--momentum', type=float, default = 0.9,
         help = 'momentum') # 优化器动量
-    parser.add_argument('--batch_size', type=int, default = 16,
+    parser.add_argument('--batch_size', type=int, default = 1024,
         help = 'batch_size') # 训练每批次图像数量
     parser.add_argument('--dropout', type=float, default = 0.5,
         help = 'dropout') # dropout
-    parser.add_argument('--epochs', type=int, default = 3000,
+    parser.add_argument('--epochs', type=int, default = 300,
         help = 'epochs') # 训练周期
     parser.add_argument('--num_workers', type=int, default = 10,
         help = 'num_workers') # 训练数据生成器线程数
-    parser.add_argument('--img_size', type=tuple , default = (256,256),
+    parser.add_argument('--img_size', type=tuple , default = (128,128),
         help = 'img_size') # 输入模型图片尺寸
     parser.add_argument('--flag_agu', type=bool , default = True,
         help = 'data_augmentation') # 训练数据生成器是否进行数据扩增

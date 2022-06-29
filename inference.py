@@ -32,21 +32,23 @@ from hand_data_iter.datasets import draw_bd_handpose
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=' Project Hand Pose Inference')
-    parser.add_argument('--model_path', type=str, default = './weights/ReXNetV1-size-256-loss-adaptive_wing_loss-model_epoch-190.pth',
+    parser.add_argument('--model_path', type=str, default = './model_exp2/2022-06-28_19-20-25/mobilenetv2-size-256-loss-wing_loss-model_epoch-299.pth',
         help = 'model_path') # 模型路径
-    parser.add_argument('--model', type=str, default = 'ReXNetV1',
+    parser.add_argument('--model', type=str, default = 'mobilenetv2',
         help = '''model : resnet_34,resnet_50,resnet_101,squeezenet1_0,squeezenet1_1,shufflenetv2,shufflenet,mobilenetv2
             shufflenet_v2_x1_5 ,shufflenet_v2_x1_0 , shufflenet_v2_x2_0,ReXNetV1''') # 模型类型
     parser.add_argument('--num_classes', type=int , default = 42,
         help = 'num_classes') #  手部21关键点， (x,y)*2 = 42
-    parser.add_argument('--GPUS', type=str, default = '0',
+    parser.add_argument('--GPUS', type=str, default = '2',
         help = 'GPUS') # GPU选择
-    parser.add_argument('--test_path', type=str, default = './image/',
+    parser.add_argument('--test_path', type=str, default = '/home/chenpengfei/handpose_x/image/smoke/',
         help = 'test_path') # 测试图片路径
     parser.add_argument('--img_size', type=tuple , default = (256,256),
         help = 'img_size') # 输入模型图片尺寸
-    parser.add_argument('--vis', type=bool , default = True,
+    parser.add_argument('--vis', type=bool , default = False,
         help = 'vis') # 是否可视化图片
+    parser.add_argument('--save_path', type=str, default='./model_exp2/2022-06-28_19-20-25/vis/',
+                        help='test_path')  # 测试图片路径
 
     print('\n/******************* {} ******************/\n'.format(parser.description))
     #--------------------------------------------------------------------------
@@ -102,81 +104,91 @@ if __name__ == "__main__":
     # print(model_)# 打印模型结构
 
     # 加载测试模型
-    if os.access(ops.model_path,os.F_OK):# checkpoint
+    if os.access(ops.model_path, os.F_OK):# checkpoint
         chkpt = torch.load(ops.model_path, map_location=device)
-        model_.load_state_dict(chkpt)
+        # model_.load_state_dict(chkpt)
+        model_.load_state_dict({k.replace('module.',''):v for k,v in chkpt.items()})
         print('load test model : {}'.format(ops.model_path))
 
-    #---------------------------------------------------------------- 预测图片
-    '''建议 检测手bbox后，crop手图片的预处理方式：
-    # img 为原图
-    x_min,y_min,x_max,y_max,score = bbox
-    w_ = max(abs(x_max-x_min),abs(y_max-y_min))
+        # ---------------------------------------------------------------- 预测图片
+        '''建议 检测手bbox后，crop手图片的预处理方式：
+        # img 为原图
+        x_min,y_min,x_max,y_max,score = bbox
+        w_ = max(abs(x_max-x_min),abs(y_max-y_min))
 
-    w_ = w_*1.1
+        w_ = w_*1.1
 
-    x_mid = (x_max+x_min)/2
-    y_mid = (y_max+y_min)/2
+        x_mid = (x_max+x_min)/2
+        y_mid = (y_max+y_min)/2
 
-    x1,y1,x2,y2 = int(x_mid-w_/2),int(y_mid-w_/2),int(x_mid+w_/2),int(y_mid+w_/2)
+        x1,y1,x2,y2 = int(x_mid-w_/2),int(y_mid-w_/2),int(x_mid+w_/2),int(y_mid+w_/2)
 
-    x1 = np.clip(x1,0,img.shape[1]-1)
-    x2 = np.clip(x2,0,img.shape[1]-1)
+        x1 = np.clip(x1,0,img.shape[1]-1)
+        x2 = np.clip(x2,0,img.shape[1]-1)
 
-    y1 = np.clip(y1,0,img.shape[0]-1)
-    y2 = np.clip(y2,0,img.shape[0]-1)
-    '''
-    with torch.no_grad():
-        idx = 0
-        for file in os.listdir(ops.test_path):
-            if '.jpg' not in file:
-                continue
-            idx += 1
-            print('{}) image : {}'.format(idx,file))
-            img = cv2.imread(ops.test_path + file)
-            img_width = img.shape[1]
-            img_height = img.shape[0]
-            # 输入图片预处理
-            img_ = cv2.resize(img, (ops.img_size[1],ops.img_size[0]), interpolation = cv2.INTER_CUBIC)
-            img_ = img_.astype(np.float32)
-            img_ = (img_-128.)/256.
+        y1 = np.clip(y1,0,img.shape[0]-1)
+        y2 = np.clip(y2,0,img.shape[0]-1)
+        '''
+        with torch.no_grad():
+            idx = 0
+            for file in os.listdir(ops.test_path):
+                if '.jpg' not in file:
+                    continue
+                idx += 1
+                print('{}) image : {}'.format(idx, file))
+                img = cv2.imread(ops.test_path + file)
+                img_width = img.shape[1]
+                img_height = img.shape[0]
+                # 输入图片预处理
+                # img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+                img_ = cv2.resize(img, (ops.img_size[1], ops.img_size[0]), interpolation=cv2.INTER_CUBIC)
+                img_ = img_.astype(np.float32)
+                img_ = (img_ - 128.) / 256.
 
-            img_ = img_.transpose(2, 0, 1)
-            img_ = torch.from_numpy(img_)
-            img_ = img_.unsqueeze_(0)
+                img_ = img_.transpose(2, 0, 1)
+                img_ = torch.from_numpy(img_)
+                img_ = img_.unsqueeze_(0)
 
-            if use_cuda:
-                img_ = img_.cuda()  # (bs, 3, h, w)
-            pre_ = model_(img_.float()) # 模型推理
-            output = pre_.cpu().detach().numpy()
-            output = np.squeeze(output)
+                if use_cuda:
+                    img_ = img_.cuda()  # (bs, 3, h, w)
+                pre_ = model_(img_.float())  # 模型推理
+                output = pre_.cpu().detach().numpy()
+                output = np.squeeze(output)
 
-            pts_hand = {} #构建关键点连线可视化结构
-            for i in range(int(output.shape[0]/2)):
-                x = (output[i*2+0]*float(img_width))
-                y = (output[i*2+1]*float(img_height))
+                pts_hand = {}  # 构建关键点连线可视化结构
+                for i in range(int(output.shape[0] / 2)):
+                    x = (output[i * 2 + 0] * float(img_width))
+                    y = (output[i * 2 + 1] * float(img_height))
 
-                pts_hand[str(i)] = {}
-                pts_hand[str(i)] = {
-                    "x":x,
-                    "y":y,
+                    pts_hand[str(i)] = {}
+                    pts_hand[str(i)] = {
+                        "x": x,
+                        "y": y,
                     }
-            draw_bd_handpose(img,pts_hand,0,0) # 绘制关键点连线
+                draw_bd_handpose(img, pts_hand, 0, 0)  # 绘制关键点连线
 
-            #------------- 绘制关键点
-            for i in range(int(output.shape[0]/2)):
-                x = (output[i*2+0]*float(img_width))
-                y = (output[i*2+1]*float(img_height))
+                # ------------- 绘制关键点
+                for i in range(int(output.shape[0] / 2)):
+                    x = (output[i * 2 + 0] * float(img_width))
+                    y = (output[i * 2 + 1] * float(img_height))
 
-                cv2.circle(img, (int(x),int(y)), 3, (255,50,60),-1)
-                cv2.circle(img, (int(x),int(y)), 1, (255,150,180),-1)
+                    cv2.circle(img, (int(x), int(y)), 3, (255, 50, 60), -1)
+                    cv2.circle(img, (int(x), int(y)), 1, (255, 150, 180), -1)
+                savePath = ops.save_path
+                if not os.path.exists(savePath):
+                    os.mkdir(savePath)
+                cv2.imwrite(savePath + file, img)
 
-            if ops.vis:
-                cv2.namedWindow('image',0)
-                cv2.imshow('image',img)
-                if cv2.waitKey(600) == 27 :
-                    break
+                if ops.vis:
+                    cv2.namedWindow('image', 0)
+                    cv2.imshow('image', img)
+                    if cv2.waitKey(600) == 27:
+                        break
 
-    cv2.destroyAllWindows()
+        cv2.destroyAllWindows()
 
-    print('well done ')
+        print('well done ')
+    else:
+        print('no model file : {}'.format(ops.model_path))
+
+
