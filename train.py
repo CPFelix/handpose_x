@@ -180,7 +180,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=' Project Hand Train')
     parser.add_argument('--seed', type=int, default = 126673,
         help = 'seed') # 设置随机种子
-    parser.add_argument('--model_exp', type=str, default = './model_exp3',
+    parser.add_argument('--model_exp', type=str, default = './model_exp6',
         help = 'model_exp') # 模型输出文件夹
     parser.add_argument('--model', type=str, default = 'mobilenetv2',
         help = '''model : resnet_34,resnet_50,resnet_101,squeezenet1_0,squeezenet1_1,shufflenetv2,shufflenet,mobilenetv2
@@ -212,7 +212,7 @@ if __name__ == "__main__":
         help = 'batch_size') # 训练每批次图像数量
     parser.add_argument('--dropout', type=float, default = 0.5,
         help = 'dropout') # dropout
-    parser.add_argument('--epochs', type=int, default = 300,
+    parser.add_argument('--epochs', type=int, default = 1000,
         help = 'epochs') # 训练周期
     parser.add_argument('--num_workers', type=int, default = 10,
         help = 'num_workers') # 训练数据生成器线程数

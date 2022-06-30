@@ -20,7 +20,7 @@ from models.rexnetv1 import ReXNetV1
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=' Project Hand Pose Inference')
-    parser.add_argument('--model_path', type=str, default = './model_exp3/2022-06-29_10-41-04/mobilenetv2-size-128-loss-wing_loss-model_epoch-0.pth',
+    parser.add_argument('--model_path', type=str, default = './model_exp6/2022-06-30_08-47-56/mobilenetv2-size-128-loss-wing_loss-model_epoch-0.pth',
         help = 'model_path') # 模型路径
     parser.add_argument('--model', type=str, default = 'mobilenetv2',
         help = '''model : resnet_34,resnet_50,resnet_101,squeezenet1_0,squeezenet1_1,shufflenetv2,shufflenet,mobilenetv2
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     x = torch.randn(batch_size, *input_shape)   # 生成张量
     x = x.to(device)
-    export_onnx_file = "{}_size-{}.onnx".format(ops.model,input_size)		# 目的ONNX文件名
+    export_onnx_file = "./model_exp6/2022-06-30_08-47-56/mobilenetv2-size-128-loss-wing_loss-model_epoch-0.onnx"		# 目的ONNX文件名
     torch.onnx.export(model_,
                         x,
                         export_onnx_file,

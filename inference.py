@@ -32,22 +32,22 @@ from hand_data_iter.datasets import draw_bd_handpose
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=' Project Hand Pose Inference')
-    parser.add_argument('--model_path', type=str, default = './model_exp2/2022-06-28_19-20-25/mobilenetv2-size-256-loss-wing_loss-model_epoch-299.pth',
+    parser.add_argument('--model_path', type=str, default = './model_exp6/2022-06-30_08-47-56/mobilenetv2-size-128-loss-wing_loss-model_epoch-999.pth',
         help = 'model_path') # 模型路径
     parser.add_argument('--model', type=str, default = 'mobilenetv2',
         help = '''model : resnet_34,resnet_50,resnet_101,squeezenet1_0,squeezenet1_1,shufflenetv2,shufflenet,mobilenetv2
             shufflenet_v2_x1_5 ,shufflenet_v2_x1_0 , shufflenet_v2_x2_0,ReXNetV1''') # 模型类型
     parser.add_argument('--num_classes', type=int , default = 42,
         help = 'num_classes') #  手部21关键点， (x,y)*2 = 42
-    parser.add_argument('--GPUS', type=str, default = '2',
+    parser.add_argument('--GPUS', type=str, default = '0',
         help = 'GPUS') # GPU选择
     parser.add_argument('--test_path', type=str, default = '/home/chenpengfei/handpose_x/image/smoke/',
         help = 'test_path') # 测试图片路径
-    parser.add_argument('--img_size', type=tuple , default = (256,256),
+    parser.add_argument('--img_size', type=tuple , default = (128,128),
         help = 'img_size') # 输入模型图片尺寸
     parser.add_argument('--vis', type=bool , default = False,
         help = 'vis') # 是否可视化图片
-    parser.add_argument('--save_path', type=str, default='./model_exp2/2022-06-28_19-20-25/vis/',
+    parser.add_argument('--save_path', type=str, default='./model_exp6/2022-06-30_08-47-56/vis/',
                         help='test_path')  # 测试图片路径
 
     print('\n/******************* {} ******************/\n'.format(parser.description))
@@ -110,6 +110,7 @@ if __name__ == "__main__":
         model_.load_state_dict({k.replace('module.',''):v for k,v in chkpt.items()})
         print('load test model : {}'.format(ops.model_path))
 
+        # torch.save(model_.state_dict(), "./model_exp3/2022-06-29_10-41-04/mobilenetv2-size-128-loss-wing_loss-model_epoch-299_singleGPU.pth")
         # ---------------------------------------------------------------- 预测图片
         '''建议 检测手bbox后，crop手图片的预处理方式：
         # img 为原图
@@ -140,12 +141,13 @@ if __name__ == "__main__":
                 img_width = img.shape[1]
                 img_height = img.shape[0]
                 # 输入图片预处理
-                # img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-                img_ = cv2.resize(img, (ops.img_size[1], ops.img_size[0]), interpolation=cv2.INTER_CUBIC)
+                img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+                img_ = cv2.resize(img_gray, (ops.img_size[1], ops.img_size[0]), interpolation=cv2.INTER_CUBIC)
                 img_ = img_.astype(np.float32)
                 img_ = (img_ - 128.) / 256.
 
-                img_ = img_.transpose(2, 0, 1)
+                # img_ = img_.transpose(2, 0, 1)
+                img_ = img_[None, :, :]
                 img_ = torch.from_numpy(img_)
                 img_ = img_.unsqueeze_(0)
 

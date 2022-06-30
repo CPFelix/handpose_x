@@ -68,8 +68,14 @@ class MobileNetV2(nn.Module):
             nn.BatchNorm2d(1280),
             nn.ReLU6(inplace=True)
         )
+        self.conv1_ = nn.Sequential(
+            nn.Conv2d(96, 512, 1),
+            nn.BatchNorm2d(512),
+            nn.ReLU6(inplace=True)
+        )
 
         self.conv2 = nn.Conv2d(1280, num_classes, 1)
+        self.conv2_ = nn.Conv2d(512, num_classes, 1)
 
         self.dropout = nn.Dropout(dropout_factor)
 
@@ -80,12 +86,14 @@ class MobileNetV2(nn.Module):
         x = self.stage3(x)
         x = self.stage4(x)
         x = self.stage5(x)
-        x = self.stage6(x)
-        x = self.stage7(x)
-        x = self.conv1(x)
+        # x = self.stage6(x)
+        # x = self.stage7(x)
+        # x = self.conv1(x)
+        x = self.conv1_(x)
         x = F.adaptive_avg_pool2d(x, 1)
         x = self.dropout(x)
-        x = self.conv2(x)
+        # x = self.conv2(x)
+        x = self.conv2_(x)
         x = x.view(x.size(0), -1)
 
         return x
