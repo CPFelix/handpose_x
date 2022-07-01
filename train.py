@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import  sys
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from utils.model_utils import *
 from utils.common_utils import *
@@ -96,6 +97,7 @@ def trainer(ops,f_log):
         optimizer_Adam = torch.optim.Adam(model_.parameters(), lr=ops.init_lr, betas=(0.9, 0.99),weight_decay=1e-6)
         # optimizer_SGD = optim.SGD(model_.parameters(), lr=ops.init_lr, momentum=ops.momentum, weight_decay=ops.weight_decay)# 优化器初始化
         optimizer = optimizer_Adam
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[200, 250, 275, 295], gamma=0.1)
         # 加载 finetune 模型
         if os.access(ops.fintune_model,os.F_OK):# checkpoint
             chkpt = torch.load(ops.fintune_model, map_location=device)
@@ -124,18 +126,18 @@ def trainer(ops,f_log):
                 sys.stdout = f_log
             print('\nepoch %d ------>>>'%epoch)
             model_.train()
-            # 学习率更新策略
-            if loss_mean!=0.:
-                if best_loss > (loss_mean/loss_idx):
-                    flag_change_lr_cnt = 0
-                    best_loss = (loss_mean/loss_idx)
-                else:
-                    flag_change_lr_cnt += 1
-
-                    if flag_change_lr_cnt > 50:
-                        init_lr = init_lr*ops.lr_decay
-                        set_learning_rate(optimizer, init_lr)
-                        flag_change_lr_cnt = 0
+            # # 学习率更新策略
+            # if loss_mean!=0.:
+            #     if best_loss > (loss_mean/loss_idx):
+            #         flag_change_lr_cnt = 0
+            #         best_loss = (loss_mean/loss_idx)
+            #     else:
+            #         flag_change_lr_cnt += 1
+            #
+            #         if flag_change_lr_cnt > 50:
+            #             init_lr = init_lr*ops.lr_decay
+            #             set_learning_rate(optimizer, init_lr)
+            #             flag_change_lr_cnt = 0
 
             loss_mean = 0. # 损失均值
             loss_idx = 0. # 损失计算计数器
@@ -157,7 +159,7 @@ def trainer(ops,f_log):
                     loc_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                     print('  %s - %s - epoch [%s/%s] (%s/%s):'%(loc_time,ops.model,epoch,ops.epochs,i,int(dataset.__len__()/ops.batch_size)),\
                     'Mean Loss : %.6f - Loss: %.6f'%(loss_mean/loss_idx,loss.item()),\
-                    ' lr : %.8f'%init_lr,' bs :',ops.batch_size,\
+                    ' lr : %.8f'%optimizer.state_dict()['param_groups'][0]['lr'],' bs :',ops.batch_size,\
                     ' img_size: %s x %s'%(ops.img_size[0],ops.img_size[1]),' best_loss: %.6f'%best_loss, " {}".format(ops.loss_define))
                 # 计算梯度
                 loss.backward()
@@ -165,8 +167,9 @@ def trainer(ops,f_log):
                 optimizer.step()
                 # 优化器梯度清零
                 optimizer.zero_grad()
-                step += 1
 
+                step += 1
+            scheduler.step()
             #set_seed(random.randint(0,65535))
             torch.save(model_.state_dict(), ops.model_exp + '{}-size-{}-loss-{}-model_epoch-{}.pth'.format(ops.model,ops.img_size[0],ops.loss_define,epoch))
 
@@ -180,7 +183,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=' Project Hand Train')
     parser.add_argument('--seed', type=int, default = 126673,
         help = 'seed') # 设置随机种子
-    parser.add_argument('--model_exp', type=str, default = './model_exp6',
+    parser.add_argument('--model_exp', type=str, default = './model_exp7',
         help = 'model_exp') # 模型输出文件夹
     parser.add_argument('--model', type=str, default = 'mobilenetv2',
         help = '''model : resnet_34,resnet_50,resnet_101,squeezenet1_0,squeezenet1_1,shufflenetv2,shufflenet,mobilenetv2
@@ -212,7 +215,7 @@ if __name__ == "__main__":
         help = 'batch_size') # 训练每批次图像数量
     parser.add_argument('--dropout', type=float, default = 0.5,
         help = 'dropout') # dropout
-    parser.add_argument('--epochs', type=int, default = 1000,
+    parser.add_argument('--epochs', type=int, default = 300,
         help = 'epochs') # 训练周期
     parser.add_argument('--num_workers', type=int, default = 10,
         help = 'num_workers') # 训练数据生成器线程数
